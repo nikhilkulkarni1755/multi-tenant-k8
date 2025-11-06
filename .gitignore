@@ -1,0 +1,46 @@
+# macOS metadata files
+._*
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Terraform files with sensitive data
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+tfplan
+tfplan.*
+.terraform/
+.terraform.lock.hcl
+
+# Environment variables and secrets
+.env
+.env.*
+*.pem
+*.key
+*.crt
+secrets.*
+credentials.*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Log files
+*.log
+
+# OS files
+Thumbs.db

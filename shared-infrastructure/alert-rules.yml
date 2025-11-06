@@ -1,0 +1,107 @@
+groups:
+  - name: tenant_alerts
+    interval: 30s
+    rules:
+      # High error rate alert
+      - alert: HighErrorRate
+        expr: |
+          (sum by (tenant) (rate(http_request_errors_total[5m])) /
+           sum by (tenant) (rate(http_requests_total[5m]))) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          tenant: '{{ $labels.tenant }}'
+        annotations:
+          summary: "High error rate detected for {{ $labels.tenant }}"
+          description: "Error rate for {{ $labels.tenant }} is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      # High latency alert
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum by (tenant, le) (rate(http_request_duration_seconds_bucket[5m]))
+          ) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          tenant: '{{ $labels.tenant }}'
+        annotations:
+          summary: "High latency detected for {{ $labels.tenant }}"
+          description: "95th percentile latency for {{ $labels.tenant }} is {{ $value | humanizeDuration }} (threshold: 1s)"
+
+      # Service unavailable
+      - alert: ServiceDown
+        expr: |
+          up{job=~"acme-corp-app|closed-ai-app"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          tenant: '{{ $labels.tenant }}'
+        annotations:
+          summary: "Service unavailable for {{ $labels.tenant }}"
+          description: "Service {{ $labels.job }} in {{ $labels.tenant }} namespace is down"
+
+      # Too many active requests
+      - alert: TooManyActiveRequests
+        expr: |
+          http_requests_active{tenant!=""} > 100
+        for: 5m
+        labels:
+          severity: warning
+          tenant: '{{ $labels.tenant }}'
+        annotations:
+          summary: "Too many active requests for {{ $labels.tenant }}"
+          description: "{{ $labels.tenant }} has {{ $value }} active requests (threshold: 100)"
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: |
+          (container_memory_usage_bytes{pod=~"tenant-app.*"} /
+           container_spec_memory_limit_bytes{pod=~"tenant-app.*"}) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          pod: '{{ $labels.pod }}'
+          namespace: '{{ $labels.namespace }}'
+        annotations:
+          summary: "High memory usage in pod {{ $labels.pod }}"
+          description: "Memory usage for {{ $labels.pod }} in {{ $labels.namespace }} is {{ $value | humanizePercentage }} (threshold: 80%)"
+
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: |
+          (rate(container_cpu_usage_seconds_total{pod=~"tenant-app.*"}[5m]) /
+           container_spec_cpu_quota{pod=~"tenant-app.*"}) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          pod: '{{ $labels.pod }}'
+          namespace: '{{ $labels.namespace }}'
+        annotations:
+          summary: "High CPU usage in pod {{ $labels.pod }}"
+          description: "CPU usage for {{ $labels.pod }} in {{ $labels.namespace }} is {{ $value | humanizePercentage }} (threshold: 80%)"
+
+  - name: infrastructure_alerts
+    interval: 30s
+    rules:
+      # Prometheus scrape failures
+      - alert: PrometheusScrapeFailed
+        expr: |
+          increase(prometheus_tsdb_symbol_table_size_bytes[5m]) == 0
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Prometheus scrape may be failing"
+          description: "Prometheus has not ingested metrics in the last 10 minutes"
+
+      # AlertManager down
+      - alert: AlertmanagerDown
+        expr: |
+          up{job="alertmanager"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "AlertManager is down"
+          description: "AlertManager instance is not responding"

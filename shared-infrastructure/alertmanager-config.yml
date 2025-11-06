@@ -1,0 +1,61 @@
+global:
+  resolve_timeout: 5m
+
+# The root route with all parameters, which are inherited by the child
+# routes if they are not overwritten.
+route:
+  receiver: 'default'
+  group_by: ['alertname', 'cluster', 'service', 'tenant']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+
+  # Tenant-specific routing
+  routes:
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 0s
+      group_interval: 5m
+      repeat_interval: 4h
+
+    - match:
+        tenant: acme-corp
+      receiver: 'acme-corp-alerts'
+      group_interval: 10s
+      repeat_interval: 12h
+
+    - match:
+        tenant: closed-ai
+      receiver: 'closed-ai-alerts'
+      group_interval: 10s
+      repeat_interval: 12h
+
+receivers:
+  - name: 'default'
+    # Default receiver - you can add webhook, email, or other integrations here
+    # Example webhook:
+    # webhook_configs:
+    #   - url: 'http://example.com/webhook'
+
+  - name: 'critical-alerts'
+    # Critical alerts receiver
+    # Add integrations for critical alerts (e.g., PagerDuty, OpsGenie)
+
+  - name: 'acme-corp-alerts'
+    # ACME Corp specific alerts
+    # webhook_configs:
+    #   - url: 'http://slack.webhook/acme-corp'
+
+  - name: 'closed-ai-alerts'
+    # Closed AI specific alerts
+    # webhook_configs:
+    #   - url: 'http://slack.webhook/closed-ai'
+
+inhibit_rules:
+  # Inhibit alert1 from being sent if alert2 is firing by the same (or subset of) labels.
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'tenant', 'namespace']
