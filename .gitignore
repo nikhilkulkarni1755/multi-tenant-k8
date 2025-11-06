@@ -8,6 +8,10 @@
 *.tfstate
 *.tfstate.*
 *.tfstate.backup
+*.tfvars
+*.tfvars.json
+*.auto.tfvars
+*.auto.tfvars.json
 tfplan
 tfplan.*
 .terraform/
